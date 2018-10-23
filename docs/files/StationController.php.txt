@@ -1,0 +1,85 @@
+<?php
+/**
+  * StationController Class 
+  *
+  * This class is used for send and receive the XML from Wheelsys API. 
+  *
+  * @filesource StationController.php
+  * @api Wheelsys API
+  * @since 1.0
+ */
+use Phalcon\Mvc\Controller;
+
+class StationController extends Controller{
+	
+	public function indexAction(){
+		
+	}
+		
+	/**
+  * cURL request and response
+  *
+  * This function is used for send and receive the XML format. 
+  * * We will convert the XML into Json formats using the simplexml_load_string function
+  * * We Remove the @ character from the json response
+  *
+  * @param string $post_string is used for collect the XML request
+  * @filesource StationController.php
+  * @api Wheelsys API
+  * @since 1.0
+  * @return void
+  */
+	
+	public function curlrequest($post_string)
+	{
+
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, "http://develop.invensys.gr/reservations/link/");
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, TRUE);
+		curl_setopt($ch, CURLOPT_HEADER, FALSE);
+		curl_setopt($ch, CURLOPT_POST, TRUE);
+		curl_setopt($ch, CURLOPT_POSTFIELDS, $post_string);
+		curl_setopt($ch, CURLOPT_HTTPHEADER, array("Content-Type: application/x-www-form-urlencoded"));
+		$response = curl_exec($ch);
+		$xml = simplexml_load_string($response);
+		$json = str_replace('@attributes', 'attributes', json_encode($xml));
+		curl_close($ch);
+		echo  $json;
+		
+	}
+	
+	/**
+  * Getcountry List
+  *
+  * This function is used to get all country list from the Europecar API
+  * @api Europecar API
+  * @filesource europcar.php
+  *
+  * @param string $post_string is used for collect the XML request
+  *
+  * @return json country list
+**/
+	
+	public function stationAction() {
+
+		$url = 'http://develop.invensys.gr/reservations/link/'; 
+		$query = "stations_AUF72F23.html?agent=INV123456";
+		$url_final = $url.''.$query;
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url_final);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 60); 
+		curl_setopt($ch, CURLOPT_TIMEOUT,        60); 
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true );
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);  
+		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+		$result = curl_exec ($ch);
+		$response = preg_replace("/(<\/?)(\w+):([^>]*>)/", "$1$2$3", $result);
+		$xml = new SimpleXMLElement($response);
+		$json = str_replace('@attributes', 'attributes', json_encode($xml));
+		curl_close($ch);		
+		echo $json;
+		
+	}
+	
+}
+

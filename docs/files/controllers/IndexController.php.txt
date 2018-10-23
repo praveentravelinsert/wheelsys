@@ -1,0 +1,334 @@
+<?php
+
+use Phalcon\Mvc\Controller;
+
+/**
+ * IndexController Class 
+ *
+ * This class is used for send and receive the XML from Wheesys API. 
+ *
+ * @filesource indexcontroller.php
+ * @api Wheelsys API
+ * @since 1.0
+ */
+
+class IndexController extends Controller
+{		
+    /**
+     * cURL request and response function for all wheelsys function
+     *
+     * This function is used for send and receive the XML format. 
+     * * We will convert the XML into Json formats using the simplexml_load_string function
+     * * We Remove the @ character from the json response
+     *
+     * @param string $post_string is used for collect the XML request
+     * @filesource indexcontroller.php
+     * @api Wheelsys API
+     * @since 1.0
+     * @return void
+     */
+
+    public function curlRequest($post_string)
+	{
+	    $curl_url = 'http://develop.invensys.gr/reservations/link/';
+		$url = $curl_url.''.$post_string;
+		$ch = curl_init();
+		curl_setopt($ch, CURLOPT_URL, $url);
+		curl_setopt($ch, CURLOPT_CONNECTTIMEOUT, 60); 
+		curl_setopt($ch, CURLOPT_TIMEOUT,        60); 
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, true );
+		curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);  
+		curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
+		$result = curl_exec ($ch);
+		$response = preg_replace("/(<\/?)(\w+):([^>]*>)/", "$1$2$3", $result);
+		$xml = new SimpleXMLElement($response);
+		$json = str_replace('@attributes', 'attributes', json_encode($xml));
+		curl_close($ch);
+		print_r($json);				
+		exit;
+		if ($http_status == 200) {
+	    	print_r($json);
+		    exit;       
+		} else {
+		    echo '<script>alert("Invalid Response")</script>';
+		}
+		
+	}
+	
+    /**
+	  * Get stations List
+	  *
+	  * This function is used to get all station list from the Wheelsys API
+	  * @api Wheelsys API
+	  * @filesource indexcontroller.php
+	  *
+      * @param NULL
+	  *
+	  * @return void
+	  **/
+	
+	public function stationAction() 
+	{
+   	    $post_string = "stations_AUF72F23.html?agent=INV123456";
+		$station = $this->curlRequest($post_string);
+	}
+
+    /**
+     * Get Price Quote List 
+     *
+     * This function is used to get price quote list for rates and availability of the vehicles from the Wheelsys API
+     * @api Wheelsys API
+     * @filesource indexcontroller.php
+     *
+     * @param $from is used to get the from date
+     * @param $from_time is used to get the from time
+     * @param $to is used to get the to date
+     * @param $to_time  is used to get the to time
+     * @param $pickup_station is used to get the pickup station code
+     * @param $return_station is used to get the return station code
+     *
+     * @return json country list
+     **/
+	
+    public function priceQuoteAction() 
+    {   
+        $from = $_GET['from']; //14/12/2018
+        $from_time = $_GET['from_time']; //1200
+        $to = $_GET['to']; //18/12/2018
+        $to_time = $_GET['to_time']; //2200
+        $pickup_station = $_GET['pickup_station']; //A9K
+		
+        $return_station = $_GET['return_station']; //A9K //optional variable
+        $pickup_point = $_GET['pickup_point']; //optional variable
+        $dropoff_point = $_GET['dropoff_point']; //optional variable 
+		
+        //$post_string = "price-quote_AUF72F23.html?agent=INV123456&date_from=".$from."&time_from=".$from_time."&date_to=".$to."&time_to=".$to_time."&pickup_station=".$pickup_station."&return_station=".$return_station."";
+        $post_string = "price-quote_AUF72F23.html?agent=INV123456&date_from=".$from."&time_from=".$from_time."&date_to=".$to."&time_to=".$to_time."&pickup_station=".$pickup_station."&return_station=".$return_station."$pickup_point=".$pickup_point."&dropoff_point=".$dropoff_point."";
+        $priceqoute = $this->curlRequest($post_string);
+    }
+
+    /**
+     * Get Groups List 
+     *
+     * This function is used to get the vehicle's model and group from the Wheelsys API
+     * @api Wheelsys API
+     * @filesource indexcontroller.php
+     *
+     * @param NULL
+     *
+     * @return void
+     **/
+	
+    public function groupsAction() 
+    {   
+        $post_string = "groups_AUF72F23.html?agent=INV123456";
+        $groups = $this->curlRequest($post_string);
+    }
+   
+    /**
+     * Get Reservation  
+     *
+     * This function is used to make the reservation of the vehicles from the Wheelsys API
+     * @api Wheelsys API
+     * @filesource indexcontroller.php
+     *
+     * @param $from is used to get the from date
+     * @param $from_time is used to get the from time	
+     * @param $to is used to get the to date
+     * @param $to_time  is used to get the to time
+     * @param string $pickup_station is used to get the pickup station code
+     * @param $return_station is used to get the return station code
+     * @param $customer_name is used to get the return station code
+     * @param $voucherno is used to get the return station code
+     * @param $pickup_info to get the pickup like If outside the office or ant staion details
+     * @param $return_info to get the drop location/area details
+     * @param $customer_email to get the customer's email id
+     * @param $customer_phone to get the customer's phone number
+     * @param $quoteref_id to get the  price quote id from pricequote details
+     * @param $pickup_point to get the pick up point 
+     * @param $remarks to get the drop point
+     * @param $option_code to get the options of vehicles
+     * 
+     * @return json string
+     **/
+
+    public function reservationAction() 
+    {  
+        $from = $_GET['from']; //14/12/2018
+        $from_time = $_GET['from_time']; //1200
+		$to = $_GET['to']; //18/12/2018
+		$to_time = $_GET['to_time']; //2200
+		$pickup_station = $_GET['pickup_station']; //A9K
+		$return_station = $_GET['return_station']; //A9K //optional variable
+  		$customer_name = $_GET['customer_name'];
+		$group = $_GET['group'];
+   		$voucherno = $_GET['voucherno'];	
+		//$voucherno = mt_rand();
+		
+		
+		$pickup_info = $_GET['pickup_info']; //optional variable  /* If outside the office or Flight No */
+		$return_info = $_GET['return_info']; //optional variable  /* If outside the office or any specific area */
+		$customer_email = $_GET['customer_email']; //optional variable
+		$customer_phone = $_GET['customer_phone']; //optional variable
+		$quoteref_id = $_GET['quoteref_id']; //optional variable /* Your Price Quote ID */
+		$pickup_point = $_GET['pickup_point']; //optional variable 
+		$dropoff_point = $_GET['dropoff_point']; //optional variable
+		$remarks = $_GET['remarks']; //optional variable 
+		$option_code = $_GET['option_code']; //optional variable /* options for the vehicles */
+		
+        //$post_string = "new-res_AUF72F23.html?agent=INV123456&date_from=".$from."&time_from=".$from_time."&date_to=".$to."&time_to=".$to_time."&pickup_station=".$pickup_station."&return_station=".$return_station."&group=".$group."&customer_name=".$customer_name."&voucherno=".$voucherno."";
+	    $post_string = "new-res_AUF72F23.html?agent=INV123456&date_from=".$from."&time_from=".$from_time."&date_to=".$to."&time_to=".$to_time."&pickup_station=".$pickup_station."&return_station=".$return_station."&group=".$group."&customer_name=".$customer_name."&voucherno=".$voucherno."&pickup_info=".$pickup_info."$return_info=".$return_info."$customer_email=".$customer_email."$customer_phone=".$customer_phone."$quoteref_id=".$quoteref_id."$pickup_point=".$pickup_point."$dropoff_point=".$dropoff_point."$remarks=".$remarks."$option_code=".$option_code."";
+		$reservation = $this->curlRequest($post_string);
+		//{"reservation":{"attributes":{"irn":"9400907","status":"OK","refno":"1049671525"}}}
+	}
+
+/**
+  * Get expresscheckout details  
+  *
+  * This function is used to get check to provide advance customer details such as license number & identification to speed up car delivery.
+  * Express information can be set even if the reservation is at on-request statusf from Wheelsys API
+  *
+  * @api Wheelsys API
+  * @filesource europcar.php
+  *
+  * @param string $post_string is used for collect the XML request
+  *
+  * @return json sting list
+  **/
+	
+	public function expressCheckoutAction() 
+	{   
+		$refno = $_GET['refno']; // AK912 sample value
+		$irn = $_GET['irn']; // 9400907 sampl vlaue
+        $post_string = "express_AUF72F23.html?agent=INV123456&refno=".$refno."&irn=".$irn."";
+		$station    = $this->curlRequest($post_string);
+		//{"reservation":{"attributes":{"irn":"9400907","status":"OK","refno":"1049671525"}}}
+	}
+	
+/**
+  * Get Amend Reservation  details
+  *
+  * This function is used to make the amendment for the reservation of the vehicles from the Wheelsys API
+  * @api Wheelsys API
+  * @filesource indexcontroller.php
+  *
+  * @param $from is used to get the from date
+  * @param $from_time is used to get the from time	
+  * @param $to is used to get the to date
+  * @param $to_time  is used to get the to time
+  * @param $pickup_station is used to get the pickup station code
+  * @param $return_station is used to get the return station code
+  * @param $customer_name is used to get the return station code
+  * @param $voucherno is used to get the return station code
+  * @param $irn is used to get the return irn 
+  * @param $refno is used to get the return refenrce number 
+  * @param $customer_name is used to get the return station code
+  * @param $pickup_info to get the pickup like If outside the office or ant staion details
+  * @param $return_info to get the drop location/area details
+  * @param $customer_email to get the customer's email id
+  * @param $customer_phone to get the customer's phone number
+  * @param $quoteref_id to get the  price quote id from pricequote details
+  * @param $pickup_point to get the pick up point 
+  * @param $remarks to get the drop point
+  * @param $option_code to get the options of vehicles
+  *
+  * @return json string
+  **/
+	
+	public function amendReservationAction() 
+	{  
+		$from = $_GET['from']; //14/12/2018
+		$from_time = $_GET['from_time']; //1200
+		$to = $_GET['to']; //18/12/2018
+		$to_time = $_GET['to_time']; //2200
+		$pickup_station = $_GET['pickup_station']; //A9K
+		$return_station = $_GET['return_station']; //A9K
+  		$customer_name = $_GET['customer_name'];
+		$group = $_GET['group'];
+   		$voucherno = $_GET['voucherno'];	
+        $irn =  $_GET['irn'];
+		$refno = $_GET['refno'];	
+
+		$pickup_info = $_GET['pickup_info']; //optional variable  /* If outside the office or Flight No */
+		$return_info = $_GET['return_info']; //optional variable  /* If outside the office or any specific area */
+		$customer_email = $_GET['customer_email']; //optional variable
+		$customer_phone = $_GET['customer_phone']; //optional variable
+		$quoteref_id = $_GET['quoteref_id']; //optional variable /* Your Price Quote ID */
+		$pickup_point = $_GET['pickup_point']; //optional variable 
+		$dropoff_point = $_GET['dropoff_point']; //optional variable
+		$remarks = $_GET['remarks']; //optional variable 
+		$option_code = $_GET['option_code']; //optional variable /* options for the vehicles */
+		
+        $post_string = "amend-res_AUF72F23.html?agent=INV123456&refno=".$refno."&irn=".$irn."&date_from=".$from."&time_from=".$from_time."&date_to=".$to."&time_to=".$to_time."&pickup_station=".$pickup_station."&return_station=".$return_station."&group=".$group."&customer_name=".$customer_name."&voucherno=".$voucherno."&pickup_info=".$pickup_info."$return_info=".$return_info."$customer_email=".$customer_email."$customer_phone=".$customer_phone."$quoteref_id=".$quoteref_id."$pickup_point=".$pickup_point."$dropoff_point=".$dropoff_point."$remarks=".$remarks."$option_code=".$option_code."";
+		$station = $this->curlRequest($post_string);
+		//{"reservation":{"attributes":{"irn":"9400907","status":"OK","refno":"1049671525"}}}
+	}
+	
+
+/**
+  * Get cancel Reservation  details
+  *
+  * This function is used to cancel reservation of the vehicles from the Wheelsys API
+  * @api Wheelsys API
+  * @filesource indexcontroller.php
+  *
+  * @param $irn is used to get the irn for cancellaiton
+  * @param $refno is used to get the for  cancellation 
+  *
+  * @return json string
+  **/
+	
+	public function cancelReservationAction() 
+	{  
+        $irn =  $_GET['irn'];
+		$refno = $_GET['refno'];	
+        $post_string = "cancel-res_AUF72F23.html?agent=INV123456&refno=".$refno."&irn=".$irn."";
+		$station = $this->curlRequest($post_string);
+		//{"reservation":{"attributes":{"irn":"9400907","status":"OK","refno":"1049671525"}}}
+	}
+	
+	
+	/**
+  * Get Reservation details
+  *
+  * This function is used to get reservation  details of reserved vehicle from the Wheelsys API
+  * @api Wheelsys API
+  * @filesource indexcontroller.php
+  *
+  * @param $irn is used to get the irn for reservatin details
+  * @param $refno is used to get the refno for reservation details 
+  *
+  * @return json string
+  **/
+	
+	public function readReservationAction() 
+	{  
+        $irn =  $_GET['irn'];
+		$refno = $_GET['refno'];	
+        $post_string = "read-res_AUF72F23.html?agent=INV123456&refno=".$refno."&irn=".$irn."";
+		$station = $this->curlRequest($post_string);
+		//{"reservation":{"attributes":{"irn":"9400907","status":"OK","refno":"1049671525"}}}
+	}
+
+  /**
+    * Get vehicle options
+    *
+    * This function is used to get all optiona which the vehicle has from the Wheelsys API
+    * @api Wheelsys API
+    * @filesource indexcontroller.php
+    *
+    * @param NULL
+    *
+    * @return void
+    **/
+	
+	public function optionAction() 
+	{   
+	    $post_string = "options_AUF72F23.html?agent=INV123456";
+		$station    = $this->curlRequest($post_string);
+	}
+
+	
+}
+
+
